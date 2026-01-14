@@ -31,18 +31,18 @@ schema = None
 
 @app.on_event("startup")
 def startup():
-    global schema
+    global schema, model, model_version, threshold, feature_cols
     schema = load_schema(SCHEMA_PATH)
 
     try:
         model, model_version, threshold, feature_cols = load_production_model(MODEL_NAME)
-        print(f"✅ Model loaded: {MODEL_NAME} v{model_version}")
+        print(f"[startup] Model loaded: {MODEL_NAME} v{model_version}")
     except Exception as e:
         model = None
         model_version = "unavailable"
         threshold = None
         feature_cols = []
-        print(f"⚠️ Model not loaded at startup: {e}")
+        print(f"[startup] Model not loaded at startup: {e}")
 
 
     # Helpful startup logs (shows what MLflow actually loaded)

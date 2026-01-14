@@ -13,8 +13,8 @@ def load_production_model(model_name: str = "fraud_anomaly_model") -> Tuple[Any,
 
     Priority:
       1) If MODEL_URI env is provided (e.g., runs:/<run_id>/model), load direct from that run.
-      2) Else load from Model Registry Production stage: models:/<model_name>/Production
-         (fallback to latest version if Production not set)
+      2) Else load from Model Registry alias (default: production): models:/<model_name>@<alias>
+         (fallback to latest version if alias not set)
 
     Returns: (model, model_version_label, threshold, feature_cols)
     """
@@ -55,14 +55,21 @@ def load_production_model(model_name: str = "fraud_anomaly_model") -> Tuple[Any,
         model_version = os.environ.get("MODEL_VERSION", f"run-{run_id}")
         return model, model_version, threshold, feature_cols
 
-    # ---------- Mode 2: Registry (Production preferred) ----------
-    # Try Production stage first
-    prod = client.get_latest_versions(model_name, stages=["Production"])
-    if prod:
-        chosen = prod[0]
+    # ---------- Mode 2: Registry (alias preferred) ----------
+    # Prefer model aliases over stages (stages are deprecated in MLflow 2.9+)
+    alias = os.environ.get("MODEL_ALIAS", "production")
+    chosen = None
+    registry_uri = ""
+    try:
+        if hasattr(client, "get_model_version_by_alias"):
+            chosen = client.get_model_version_by_alias(model_name, alias)
+            registry_uri = f"models:/{model_name}@{alias}"
+    except Exception:
+        chosen = None
+
+    if chosen:
         run_id = chosen.run_id
-        model_version = f"v{chosen.version}-Production"
-        registry_uri = f"models:/{model_name}/Production"
+        model_version = f"v{chosen.version}-{alias}"
     else:
         # Fallback: latest version of the model
         versions = client.search_model_versions(f"name='{model_name}'")
