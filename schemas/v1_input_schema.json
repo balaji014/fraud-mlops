@@ -1,0 +1,22 @@
+{
+  "schema_version": "v1",
+  "label_column": "Class",
+  "features": {
+    "Time": { "type": "float", "required": true },
+    "Amount": { "type": "float", "required": true },
+    "V1": { "type": "float", "required": true },
+    "V2": { "type": "float", "required": true },
+    "V3": { "type": "float", "required": true },
+    "V4": { "type": "float", "required": true },
+    "V5": { "type": "float", "required": true },
+    "V6": { "type": "float", "required": true },
+    "V7": { "type": "float", "required": true },
+    "V8": { "type": "float", "required": true },
+    "V9": { "type": "float", "required": true },
+    "V10": { "type": "float", "required": true },
+    "V11": { "type": "float", "required": true },
+    "V12": { "type": "float", "required": true },
+    "V13": { "type": "float", "required": true },
+    "V14": { "type": "float", "required": true }
+  }
+}

@@ -1,0 +1,21 @@
+experiment_name: fraud-anomaly-dev
+model_name: fraud_anomaly_model
+
+data:
+  path: data/creditcard.csv
+  label_col: Class
+  schema_path: schemas/v1_input_schema.json
+
+train:
+  algorithm: IsolationForest
+  contamination: 0.0017
+  n_estimators: 200
+  random_state: 42
+  train_normal_fraction: 0.8
+
+threshold:
+  method: best_f1
+  search_percentiles:
+    start: 50
+    end: 99.9
+    steps: 250

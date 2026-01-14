@@ -1,7 +1,9 @@
-.venv
-__pycache__
-artifacts
-mlruns
-data
+.venv/
+__pycache__/
+artifacts/
+mlflow.db
+mlartifacts/
+mlruns/
+data/
 *.joblib
 *.csv

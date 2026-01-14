@@ -1,0 +1,28 @@
+services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: mlflow
+    command: >
+      mlflow server
+      --backend-store-uri file:/mlflow/mlruns
+      --artifacts-destination file:/mlflow/artifacts
+      --host 0.0.0.0
+      --port 5000
+      --allowed-hosts '*'
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlflow/mlruns
+      - ./mlartifacts:/mlflow/artifacts
+
+  fraud-api:
+    image: balaji4wm/fraud-anomaly-api:local
+    container_name: fraud-api
+    depends_on:
+      - mlflow
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      # Registry mode (preferred): will load models:/fraud_anomaly_model/Production
+      MODEL_NAME: fraud_anomaly_model
+    ports:
+      - "18001:8000"
