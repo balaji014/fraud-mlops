@@ -31,9 +31,19 @@ schema = None
 
 @app.on_event("startup")
 def startup():
-    global model, model_version, threshold, feature_cols, schema
+    global schema
     schema = load_schema(SCHEMA_PATH)
-    model, model_version, threshold, feature_cols = load_production_model(MODEL_NAME)
+
+    try:
+        model, model_version, threshold, feature_cols = load_production_model(MODEL_NAME)
+        print(f"✅ Model loaded: {MODEL_NAME} v{model_version}")
+    except Exception as e:
+        model = None
+        model_version = "unavailable"
+        threshold = None
+        feature_cols = []
+        print(f"⚠️ Model not loaded at startup: {e}")
+
 
     # Helpful startup logs (shows what MLflow actually loaded)
     print(f"[startup] Loaded model type: {type(model)}")
@@ -46,10 +56,12 @@ def startup():
 def health():
     return {
         "status": "ok",
+        "model_loaded": model is not None,
         "model_name": MODEL_NAME,
         "model_version": model_version,
         "threshold": threshold,
     }
+
 
 
 @app.get("/metrics")
@@ -96,12 +108,22 @@ def _compute_anomaly_score(m, X: pd.DataFrame) -> float:
     anomaly_score = float(-decision)
     return anomaly_score
 
+def ensure_model_loaded():
+    global model, model_version, threshold, feature_cols
+    if model is None:
+        model, model_version, threshold, feature_cols = load_production_model(MODEL_NAME)
+
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(req: PredictRequest):
     start = time.perf_counter()
     endpoint = "/predict"
-
+    try:
+        ensure_model_loaded()
+    except Exception as e:
+        ERRORS_TOTAL.labels(type="model_load_failed", endpoint=endpoint, model_version=str(model_version)).inc()
+        REQUESTS_TOTAL.labels(endpoint=endpoint, http_status="503", model_version=str(model_version)).inc()
+        raise HTTPException(status_code=503, detail=f"Model not available yet: {str(e)}")
     try:
         if model is None or feature_cols is None or threshold is None:
             ERRORS_TOTAL.labels(type="model_not_loaded", endpoint=endpoint, model_version=str(model_version)).inc()
